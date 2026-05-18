@@ -1,0 +1,6 @@
+[project]
+name = "maintainers-copilot-backend"
+version = "0.0.0"
+description = "Maintainer's Copilot backend (skeleton)"
+requires-python = ">=3.12"
+dependencies = []
