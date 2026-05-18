@@ -6,16 +6,17 @@ services:
       context: ./backend
       dockerfile: docker/Dockerfile
     command: >
-      sh -c "python -m app.core.lifespan &&
-             python -c 'import time; print(\"api placeholder: startup checks passed; sleeping\", flush=True); time.sleep(10**9)'"
+      sh -c "uv run --no-dev python -m app.core.lifespan &&
+             uv run --no-dev python -c 'import time; print(\"api placeholder: startup checks passed; sleeping\", flush=True); time.sleep(10**9)'"
     environment:
       VAULT_ADDR: http://vault:8200
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-dev-only-root-token}
+      DATABASE_URL: postgresql+asyncpg://${DATABASE_USER:-maintainers_copilot}@db:5432/${DATABASE_NAME:-maintainers_copilot}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       vault:
@@ -65,8 +66,9 @@ services:
     build:
       context: ./backend
       dockerfile: docker/Dockerfile
-    command: >
-      python -c "print('Alembic migrations not initialized yet; migrate placeholder exiting 0', flush=True)"
+    command: uv run --no-dev alembic upgrade head
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DATABASE_USER:-maintainers_copilot}@db:5432/${DATABASE_NAME:-maintainers_copilot}
     depends_on:
       db:
         condition: service_healthy

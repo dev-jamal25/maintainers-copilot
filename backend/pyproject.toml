@@ -4,9 +4,12 @@ version = "0.0.0"
 description = "Maintainer's Copilot backend"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "alembic",
+    "asyncpg",
     "hvac",
     "langfuse",
     "pydantic-settings",
+    "sqlalchemy",
 ]
 
 [dependency-groups]

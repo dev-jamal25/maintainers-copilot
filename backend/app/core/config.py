@@ -49,13 +49,36 @@ class TracingSettings(BaseSettings):
     )
 
 
+class DatabaseSettings(BaseSettings):
+    """Database connection config. Local-dev URL is passwordless.
+
+    Real production-shaped credentials will resolve from Vault in a later
+    chore; for now compose runs Postgres in trust mode and the local URL
+    intentionally has no password embedded.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    database_url: str = Field(
+        default="postgresql+asyncpg://maintainers_copilot@db:5432/maintainers_copilot",
+        validation_alias="DATABASE_URL",
+        description="Async SQLAlchemy URL; password must come from Vault later.",
+    )
+
+
 @dataclass
 class Settings:
     """Aggregated app settings; built from env-derived sub-settings.
 
     Lifespan callers pass this whole object so future settings groups
-    (db, redis, minio) can attach here without changing call sites.
+    (redis, minio) can attach here without changing call sites.
     """
 
     vault: VaultSettings = field(default_factory=VaultSettings)
     tracing: TracingSettings = field(default_factory=TracingSettings)
+    database: DatabaseSettings = field(default_factory=DatabaseSettings)
