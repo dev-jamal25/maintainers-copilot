@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - 'feat/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python 3.12
+        run: uv python install 3.12
+      - name: Sync dev dependencies
+        run: uv sync --dev
+      - name: Ruff check
+        run: uv run ruff check .
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python 3.12
+        run: uv python install 3.12
+      - name: Sync dev dependencies
+        run: uv sync --dev
+      - name: Mypy
+        run: uv run mypy app tests
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python 3.12
+        run: uv python install 3.12
+      - name: Sync dev dependencies
+        run: uv sync --dev
+      - name: Pytest
+        run: uv run pytest
+
+  repo-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for hardcoded secrets in source/config
+        shell: bash
+        run: |
+          # Scoped to where leaks actually matter; skips .github/, deliverables/, .env.example, README/CLAUDE by construction.
+          if grep -rnE 'sk-|ANTHROPIC_API_KEY=|LANGFUSE_SECRET_KEY=|WANDB_API_KEY=|JWT_SECRET|password=|PASSWORD=' backend/ frontend/ scripts/ docker-compose.yml; then
+            echo "::error::Potential hardcoded secret detected. Move to Vault and replace with a runtime lookup."
+            exit 1
+          fi
+
+# TODO(day-1+): add docker-build once compose services exist.
+# TODO(day-2): add classification-eval once golden set and models exist.
+# TODO(day-3): add rag-eval once RAG golden set exists.
+# TODO(day-3): add redaction-test once redaction layer exists.
+# TODO(day-4): add stack-smoke-test once compose stack exists.
