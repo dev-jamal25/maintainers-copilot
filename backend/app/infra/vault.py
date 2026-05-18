@@ -1,7 +1,7 @@
 import hvac
 import hvac.exceptions
 
-from app.core.settings import VaultSettings
+from app.core.config import VaultSettings
 from app.infra.errors import (
     VaultAuthenticationError,
     VaultConfigError,

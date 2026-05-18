@@ -6,7 +6,7 @@ services:
       context: ./backend
       dockerfile: docker/Dockerfile
     command: >
-      sh -c "python -m app.core.startup_checks &&
+      sh -c "python -m app.core.lifespan &&
              python -c 'import time; print(\"api placeholder: Vault check passed; sleeping\", flush=True); time.sleep(10**9)'"
     environment:
       VAULT_ADDR: http://vault:8200

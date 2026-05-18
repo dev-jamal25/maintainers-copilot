@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import hvac.exceptions
 import pytest
 
-from app.core.settings import VaultSettings
+from app.core.config import VaultSettings
 from app.infra.errors import (
     VaultAuthenticationError,
     VaultConfigError,
