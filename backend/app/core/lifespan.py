@@ -7,16 +7,21 @@ exercise the check before sleeping.
 
 import sys
 
-from app.core.config import VaultSettings
-from app.infra.errors import VaultError
+from app.core.config import Settings
+from app.infra.errors import TracingError, VaultError
+from app.infra.tracing import build_tracing_client
 from app.infra.vault import VaultClient
 
 
-def verify_startup_dependencies(settings: VaultSettings | None = None) -> None:
-    """Construct a VaultClient and verify Vault is ready. Raises VaultError on failure."""
-    resolved = settings if settings is not None else VaultSettings()
-    client = VaultClient(resolved)
-    client.check_ready()
+def verify_startup_dependencies(settings: Settings | None = None) -> None:
+    """Run all boot-time dependency checks in fixed order. Raises on first failure."""
+    resolved = settings if settings is not None else Settings()
+
+    vault_client = VaultClient(resolved.vault)
+    vault_client.check_ready()
+
+    tracing_client = build_tracing_client(resolved, vault_client)
+    tracing_client.check_ready()
 
 
 def main() -> int:
@@ -25,7 +30,11 @@ def main() -> int:
     except VaultError as e:
         print(f"Vault startup check failed: {e}", file=sys.stderr)
         return 1
+    except TracingError as e:
+        print(f"Tracing startup check failed: {e}", file=sys.stderr)
+        return 1
     print("Vault startup check passed", flush=True)
+    print("Tracing startup check passed", flush=True)
     return 0
 
 

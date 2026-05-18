@@ -5,6 +5,7 @@ description = "Maintainer's Copilot backend"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "hvac",
+    "langfuse",
     "pydantic-settings",
 ]
 

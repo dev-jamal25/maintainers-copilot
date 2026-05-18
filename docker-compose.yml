@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile
     command: >
       sh -c "python -m app.core.lifespan &&
-             python -c 'import time; print(\"api placeholder: Vault check passed; sleeping\", flush=True); time.sleep(10**9)'"
+             python -c 'import time; print(\"api placeholder: startup checks passed; sleeping\", flush=True); time.sleep(10**9)'"
     environment:
       VAULT_ADDR: http://vault:8200
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-dev-only-root-token}

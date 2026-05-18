@@ -19,8 +19,8 @@ FAKE_SECRETS: dict[str, dict[str, str]] = {
     "maintainers-copilot/jwt": {"signing_key": "example-jwt-signing-key"},
     "maintainers-copilot/anthropic": {"api_key": "example-anthropic-key"},
     "maintainers-copilot/langfuse": {
-        "secret_key": "example-langfuse-secret",
-        "public_key": "example-langfuse-public",
+        "public_key": "example-langfuse-public-key",
+        "secret_key": "example-langfuse-secret-key",
     },
     "maintainers-copilot/wandb": {"api_key": "example-wandb-key"},
     "maintainers-copilot/minio": {
