@@ -6,7 +6,11 @@ services:
       context: ./backend
       dockerfile: docker/Dockerfile
     command: >
-      python -c "import time; print('api placeholder: implementation deferred', flush=True); time.sleep(10**9)"
+      sh -c "python -m app.core.startup_checks &&
+             python -c 'import time; print(\"api placeholder: Vault check passed; sleeping\", flush=True); time.sleep(10**9)'"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-dev-only-root-token}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
