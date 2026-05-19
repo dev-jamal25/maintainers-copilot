@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+# uv
+.uv-cache/
+
+# Testing / type-checking / linting
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Node / frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.vite/
+
+# Frontend build outputs (separate from root build/ above; covered by glob)
+**/dist/
+**/build/
+
+# Environment / secrets - never commit
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Docker
+.docker/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Model / data artifacts (kept out of git - go to MinIO/W&B)
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+*.safetensors
+data/
+artifacts/
+*.parquet
+*.feather
+
+# Logs
+*.log
+logs/

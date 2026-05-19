@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python build / cache
+__pycache__
+*.py[cod]
+*.so
+.Python
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Frontend (not needed in backend image)
+frontend/
+node_modules/
+
+# Project meta / docs (not needed in image)
+deliverables/
+CLAUDE.md
+README.md
+scripts/
+
+# Env / secrets - never bake into images
+.env
+.env.*
+
+# Local data / model artifacts
+data/
+artifacts/
+*.log
+
+# Tests excluded from runtime image; enable a separate test stage later
+tests/
+**/tests/
