@@ -1,0 +1,17 @@
+repo: apache/airflow
+
+target_labels:
+  bug: 0
+  feature: 1
+  docs: 2
+  question: 3
+
+github_label_mapping:
+  bug:
+    - kind:bug
+  feature:
+    - kind:feature
+  docs:
+    - kind:documentation
+  question:
+    - pending-response

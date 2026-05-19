@@ -6,8 +6,11 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic",
     "asyncpg",
+    "httpx",
     "hvac",
     "langfuse",
+    "python-dotenv",
+    "pyyaml",
     "pydantic-settings",
     "sqlalchemy",
 ]

@@ -55,15 +55,24 @@ yarn-error.log*
 Thumbs.db
 
 # Model / data artifacts (kept out of git - go to MinIO/W&B)
-*.bin
+data/raw/*
+data/processed/*
+data/splits/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/splits/.gitkeep
+
+models/
+mlruns/
+wandb/
+artifacts/
+*.safetensors
 *.pt
 *.pth
+*.bin
+*.onnx
 *.ckpt
 *.h5
-*.onnx
-*.safetensors
-data/
-artifacts/
 *.parquet
 *.feather
 
