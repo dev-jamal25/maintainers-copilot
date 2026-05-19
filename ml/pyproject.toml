@@ -3,7 +3,10 @@ name = "maintainers-copilot-ml"
 version = "0.0.0"
 description = "Maintainer's Copilot ML utilities"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "joblib",
+    "scikit-learn",
+]
 
 [dependency-groups]
 dev = [
