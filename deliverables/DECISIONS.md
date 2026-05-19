@@ -4,26 +4,24 @@ This file records project decisions as they are frozen during the week. Each day
 
 # Day 1 decisions
 
-## D1.1 Dataset source: HuggingFace Transformers GitHub issues
+## D1.1 Dataset source: apache/airflow GitHub issues
 
-**Decision:** Use closed issues from the HuggingFace Transformers repository.
+**Decision:** Use closed issues from the Apache Airflow repository.
 
 **Reasoning:**
 
-- The repository has a large and active issue history.
-- Issues are technical enough for meaningful entity extraction.
-- Labels are likely rich enough to map into `bug`, `feature`, `docs`, and `question`.
-- The domain fits the bootcamp project because it is an ML/NLP open-source project.
+- The repository has a large and active issue history with enough closed issues for a balanced classifier dataset.
+- Its labels map cleanly into the required four classes: `kind:bug`, `kind:feature`, `kind:documentation`, and `pending-response` as the documented question heuristic.
+- Issues are operationally rich and technical enough for meaningful entity extraction, summarization, and later RAG evaluation.
+- Fetching by class label gives a reproducible 500-example target per class without faking or duplicating examples.
 
 **Implementation note:**
 
-We will scrape a bounded number of issues and train on Colab to avoid local compute bottlenecks.
+We will scrape a bounded number of class-labeled issues locally, export the mapped dataset, and train/split on Colab to avoid local compute bottlenecks.
 
 **Still to freeze after scraping:**
 
-- Exact number of scraped issues.
-- Exact GitHub label mapping.
-- Final train/validation/test counts.
+- Final Colab train/validation/test counts.
 
 ## D1.2 Classification label mapping policy
 
@@ -248,6 +246,51 @@ event: done
 **Reasoning:**
 
 Writing decisions early prevents vague Friday explanations. The files can start as skeletons and become more concrete as code and metrics land.
+
+## D1.16 Carve-out reserve selection
+
+**Decision:** Add a standalone reserve-carving script before classifier train/validation/test splitting.
+
+**Selection criteria:**
+
+- Classification golden eval: choose 25 short, unambiguous mapped issues, balanced as 7 `bug`, 6 `docs`, 7 `feature`, and 5 `question`, where the class is clear from the title and opening paragraph.
+- RAG holdout: choose 50-100 mapped issues only when the raw issue record includes thread comments with a substantive maintainer-side response from a `MEMBER`, `OWNER`, or `CONTRIBUTOR`; the response must be at least 80 words, with preference for code blocks, lists, or numbered steps.
+
+**Rationale:**
+
+The classifier golden set and RAG holdout must be excluded from classifier training so later evaluation is not contaminated by examples the model has already seen. The golden eval prioritizes obvious labels for stable classifier sanity checks. The RAG holdout requires maintainer comments because the retrieval/generation task should evaluate answers grounded in real maintainer responses, not issue descriptions alone.
+
+**Final counts from the comment-enriched run:**
+
+- Classification golden eval: 25 issues, with 7 `bug`, 6 `docs`, 7 `feature`, and 5 `question`.
+- RAG holdout: 100 issues, with 22 `bug`, 20 `docs`, 14 `feature`, and 44 `question`.
+- Splittable classifier pool: 1855 issues, with 471 `bug`, 454 `docs`, 479 `feature`, and 451 `question`.
+
+The RAG holdout was selected only after re-fetching the raw issue pool with GitHub issue comments into `data/raw/github_issues_with_comments.jsonl`. These reserve files are excluded from classifier training.
+
+## D1.17 Data-quality cleaning pass
+
+**Decision:** Apply a deterministic quality filter to the mapped classifier dataset before reserve
+carving.
+
+**Filter rules and rationale:**
+
+- Drop `char_count < 20` because shorter records do not carry enough context for a
+  useful issue classifier example.
+- Drop `word_count < 5` because fewer than five lexical tokens usually means a
+  placeholder, fragment, or accidental issue body.
+- Drop only-punctuation text because it has no alphanumeric signal for label learning or evaluation.
+- Drop obvious junk patterns (`.`, `.\n\n.`, `..`, `n/a`, `na`, `test`, `delete`) because
+  they are explicit placeholders rather than maintainer-triage examples.
+
+**Counts:**
+
+- Rows in: 1980.
+- Rows out: 1973.
+- Dropped per class: {"bug": 1, "docs": 1, "feature": 1, "question": 4}.
+
+`data/processed/issues_mapped.dirty.jsonl` preserves the pre-cleaning mapped dataset for
+auditability.
 
 # Day 2 decisions
 

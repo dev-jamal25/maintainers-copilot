@@ -34,7 +34,7 @@ The project has three main technical tracks:
 
 | Area | Decision |
 |---|---|
-| Dataset source | HuggingFace Transformers GitHub issues |
+| Dataset source | appache/airflow GitHub repo issues |
 | Long-term memory | Episodic memory |
 | Tracing backend | Langfuse |
 | Fine-tuning model | DistilBERT-base |
@@ -137,7 +137,7 @@ The API and chatbot call these endpoints over HTTP using async clients with time
 
 ## 7. Data and Splits
 
-Dataset source: HuggingFace Transformers GitHub issues.
+Dataset source: Appache Airflow GitHub issues.
 
 Planned label mapping:
 
