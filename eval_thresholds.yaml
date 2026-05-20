@@ -1,0 +1,22 @@
+{
+  "classification": {
+    "classical_ml": {
+      "required": true,
+      "required_reason": "CI gate: committed lightweight classical artifact is required.",
+      "accuracy": 0.85,
+      "macro_f1": 0.85
+    },
+    "selected_distilbert": {
+      "required": false,
+      "required_reason": "Optional in CI because large DistilBERT weights remain untracked.",
+      "accuracy": 0.65,
+      "macro_f1": 0.65
+    },
+    "llm_baseline": {
+      "required": false,
+      "required_reason": "Optional in CI; no live LLM calls are allowed.",
+      "accuracy": 0.2,
+      "macro_f1": 0.2
+    }
+  }
+}

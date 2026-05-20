@@ -1,0 +1,14 @@
+{
+  "id_to_label": {
+    "0": "bug",
+    "1": "feature",
+    "2": "docs",
+    "3": "question"
+  },
+  "label_to_id": {
+    "bug": 0,
+    "docs": 2,
+    "feature": 1,
+    "question": 3
+  }
+}

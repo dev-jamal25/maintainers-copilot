@@ -61,11 +61,21 @@ data/splits/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/splits/.gitkeep
+!data/splits/golden_eval.jsonl
 
 models/
 mlruns/
 wandb/
-artifacts/
+artifacts/*
+!artifacts/classification/
+artifacts/classification/*
+!artifacts/classification/classical/
+artifacts/classification/classical/*
+!artifacts/classification/classical/label_map.json
+!artifacts/classification/classical/model.joblib
+!artifacts/classification/classical/test_metrics.json
+!artifacts/classification/classical/training_summary.json
+!artifacts/classification/classical/val_metrics.json
 *.safetensors
 *.pt
 *.pth

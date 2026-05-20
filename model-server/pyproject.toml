@@ -1,38 +1,22 @@
 [project]
-name = "maintainers-copilot-ml"
+name = "maintainers-copilot-model-server"
 version = "0.0.0"
-description = "Maintainer's Copilot ML utilities"
+description = "Maintainer's Copilot model server"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "accelerate",
-    "anthropic",
-    "evaluate",
-    "hvac",
-    "joblib",
-    "numpy",
-    "scikit-learn",
+    "fastapi",
     "torch",
     "transformers",
-    "wandb",
+    "uvicorn",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx",
     "mypy",
     "pytest",
     "ruff",
 ]
-
-[tool.uv]
-package = false
-
-[tool.uv.sources]
-torch = { index = "pytorch-cu130" }
-
-[[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
-explicit = true
 
 [tool.ruff]
 line-length = 100
@@ -40,7 +24,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S"]
-ignore = ["S101", "S311"]
+ignore = ["S101"]
 
 [tool.ruff.format]
 quote-style = "double"
