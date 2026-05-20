@@ -294,7 +294,20 @@ auditability.
 
 # Day 2 decisions
 
-_TODO: Add Tuesday DL/classifier/model-card decisions after implementation._
+## D2.2 Classification deployment candidate: classical baseline
+
+**Decision:** Use the classical TF-IDF + LogisticRegression baseline as the current deployment candidate for issue classification.
+
+**Reasoning:**
+
+- It has the strongest full-test macro-F1 among the completed local baselines.
+- It is far faster than the selected DistilBERT candidate and the LLM baseline.
+- It has a small local artifact and no per-request inference cost.
+- The selected DistilBERT candidate remains useful for transformer comparison, but it does not beat the classical baseline yet.
+- The LLM baseline remains useful as an audit/comparison baseline, but the Phase 6B balanced sample is slower and weaker, especially on `question`.
+
+**Recommendation summary:** Choose the classical baseline for now because it has the highest test macro-F1, the lowest latency, and a small local artifact. DistilBERT remains useful as a transformer baseline, and the LLM baseline is useful for audit comparison but is slower and weaker on the balanced sample.
+
 
 # Day 3 decisions
 

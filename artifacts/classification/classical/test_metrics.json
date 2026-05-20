@@ -1,0 +1,54 @@
+{
+  "accuracy": 0.727027027027027,
+  "confusion_matrix": {
+    "labels": [
+      "bug",
+      "feature",
+      "docs",
+      "question"
+    ],
+    "matrix": [
+      [
+        90,
+        2,
+        1,
+        1
+      ],
+      [
+        6,
+        85,
+        4,
+        1
+      ],
+      [
+        11,
+        15,
+        62,
+        3
+      ],
+      [
+        57,
+        0,
+        0,
+        32
+      ]
+    ]
+  },
+  "latency": {
+    "examples": 370,
+    "ms_per_example": 0.3715364864989612,
+    "total_seconds": 0.13746850000461563
+  },
+  "macro_f1": 0.7122517279273239,
+  "model": {
+    "path": "artifacts/classification/classical/model.joblib",
+    "size_bytes": 2161404
+  },
+  "per_class_f1": {
+    "bug": 0.6976744186046512,
+    "docs": 0.7848101265822784,
+    "feature": 0.8585858585858586,
+    "question": 0.5079365079365079
+  },
+  "split": "test"
+}

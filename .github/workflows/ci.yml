@@ -62,6 +62,59 @@ jobs:
       - name: Pytest
         run: uv run pytest
 
+  day2-ml:
+    runs-on: ubuntu-latest
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python 3.12
+        run: uv python install 3.12
+      - name: Sync ML dependencies
+        run: uv sync --project ml --dev
+      - name: ML Ruff check
+        run: uv run --project ml ruff check evals ml
+      - name: ML Ruff format check
+        run: uv run --project ml ruff format --check evals ml
+      - name: ML mypy
+        working-directory: ml
+        run: uv run mypy .
+      - name: ML pytest
+        working-directory: ml
+        run: uv run pytest -q
+      - name: Classification golden eval
+        run: uv run --project ml python -m evals.classification_eval
+
+  day2-model-server:
+    runs-on: ubuntu-latest
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    defaults:
+      run:
+        working-directory: model-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python 3.12
+        run: uv python install 3.12
+      - name: Sync model-server dependencies
+        run: uv sync --dev
+      - name: Model-server Ruff check
+        run: uv run ruff check .
+      - name: Model-server Ruff format check
+        run: uv run ruff format --check .
+      - name: Model-server mypy
+        run: uv run mypy app tests
+      - name: Model-server pytest
+        run: uv run pytest -q
+
   repo-hygiene:
     runs-on: ubuntu-latest
     steps:
@@ -85,7 +138,6 @@ jobs:
       - name: Build all compose images
         run: docker compose build
 
-# TODO(day-2): add classification-eval once golden set and models exist.
 # TODO(day-3): add rag-eval once RAG golden set exists.
 # TODO(day-3): add redaction-test once redaction layer exists.
 # TODO(day-4): add stack-smoke-test once compose stack exists.

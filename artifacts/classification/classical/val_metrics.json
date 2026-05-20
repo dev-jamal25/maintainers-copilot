@@ -1,0 +1,54 @@
+{
+  "accuracy": 1.0,
+  "confusion_matrix": {
+    "labels": [
+      "bug",
+      "feature",
+      "docs",
+      "question"
+    ],
+    "matrix": [
+      [
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2
+      ]
+    ]
+  },
+  "latency": {
+    "examples": 8,
+    "ms_per_example": 0.07896250099292956,
+    "total_seconds": 0.0006317000079434365
+  },
+  "macro_f1": 1.0,
+  "model": {
+    "path": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-69\\test_evaluate_classical_writes0\\artifacts\\model.joblib",
+    "size_bytes": 4329
+  },
+  "per_class_f1": {
+    "bug": 1.0,
+    "docs": 1.0,
+    "feature": 1.0,
+    "question": 1.0
+  },
+  "split": "val"
+}
