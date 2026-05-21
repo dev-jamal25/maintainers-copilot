@@ -36,12 +36,12 @@
   },
   "latency": {
     "examples": 8,
-    "ms_per_example": 0.07896250099292956,
-    "total_seconds": 0.0006317000079434365
+    "ms_per_example": 0.1220124977407977,
+    "total_seconds": 0.0009760999819263816
   },
   "macro_f1": 1.0,
   "model": {
-    "path": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-69\\test_evaluate_classical_writes0\\artifacts\\model.joblib",
+    "path": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-81\\test_evaluate_classical_writes0\\artifacts\\model.joblib",
     "size_bytes": 4329
   },
   "per_class_f1": {

@@ -76,11 +76,17 @@ def load_label_fetch_targets(
         if not isinstance(github_labels, list) or not all(
             isinstance(label, str) for label in github_labels
         ):
-            raise ValueError(f"github_label_mapping.{target_label} must be a list of strings")
-        targets.append(LabelFetchTarget(target_label=target_label, github_labels=github_labels))
+            raise ValueError(
+                f"github_label_mapping.{target_label} must be a list of strings"
+            )
+        targets.append(
+            LabelFetchTarget(target_label=target_label, github_labels=github_labels)
+        )
 
     if len(targets) != TARGET_CLASS_COUNT:
-        raise ValueError(f"Expected {TARGET_CLASS_COUNT} target classes in label mapping")
+        raise ValueError(
+            f"Expected {TARGET_CLASS_COUNT} target classes in label mapping"
+        )
     return repo, targets
 
 
@@ -207,7 +213,9 @@ async def fetch_closed_issues(
     seen_issue_ids: set[object] = set()
     pull_requests_skipped = 0
     rate_limit_remaining: str | None = None
-    per_class_counts: dict[str, int] = {target.target_label: 0 for target in label_targets}
+    per_class_counts: dict[str, int] = {
+        target.target_label: 0 for target in label_targets
+    }
     per_class_target = resolve_per_class_target(max_issues, len(label_targets))
     headers = build_headers(token)
 
@@ -283,9 +291,13 @@ def positive_int(value: str) -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fetch closed GitHub issues to raw JSONL.")
+    parser = argparse.ArgumentParser(
+        description="Fetch closed GitHub issues to raw JSONL."
+    )
     parser.add_argument("--max-pages", type=positive_int, default=None)
-    parser.add_argument("--max-issues", type=positive_int, default=DEFAULT_TARGET_TOTAL_ISSUES)
+    parser.add_argument(
+        "--max-issues", type=positive_int, default=DEFAULT_TARGET_TOTAL_ISSUES
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_PATH)
     parser.add_argument("--mapping-path", type=Path, default=DEFAULT_MAPPING_PATH)
     return parser.parse_args()
@@ -295,7 +307,9 @@ async def run() -> FetchSummary:
     load_local_env()
     args = parse_args()
     mapping_path = (
-        args.mapping_path if args.mapping_path.is_absolute() else REPO_ROOT / args.mapping_path
+        args.mapping_path
+        if args.mapping_path.is_absolute()
+        else REPO_ROOT / args.mapping_path
     )
     mapping_repo, label_targets = load_label_fetch_targets(mapping_path)
     repo = os.getenv("GITHUB_REPO", mapping_repo).strip() or mapping_repo

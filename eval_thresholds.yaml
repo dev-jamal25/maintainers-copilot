@@ -18,5 +18,20 @@
       "accuracy": 0.2,
       "macro_f1": 0.2
     }
+  },
+  "rag": {
+    "required": true,
+    "required_reason": "Day 3 CI gate: advanced RAG retrieval and judge metrics must not regress.",
+    "selected_variant": "parent_child_hybrid",
+    "selected_embedding_model": "bge-small-en-v1.5",
+    "selected_hybrid_weight": {
+      "dense": 0.5,
+      "sparse": 0.5
+    },
+    "hit_at_5": 0.3,
+    "mrr_at_10": 0.18,
+    "faithfulness": 4.0,
+    "answer_relevancy": 4.0,
+    "judge_pass_rate": 0.4
   }
 }

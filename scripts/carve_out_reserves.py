@@ -50,7 +50,9 @@ def read_jsonl(path: Path) -> list[JsonObject]:
                 continue
             parsed = json.loads(stripped)
             if not isinstance(parsed, dict):
-                raise ValueError(f"{display_path(path)}:{line_number} must contain a JSON object")
+                raise ValueError(
+                    f"{display_path(path)}:{line_number} must contain a JSON object"
+                )
             records.append(parsed)
     return records
 
@@ -146,9 +148,27 @@ def signal_score(label: str, text: str, title: str) -> int:
     text_lower = text.lower()
     title_lower = title.lower()
     cues = {
-        "bug": ("bug", "crash", "fail", "failure", "error", "exception", "broken", "regression"),
+        "bug": (
+            "bug",
+            "crash",
+            "fail",
+            "failure",
+            "error",
+            "exception",
+            "broken",
+            "regression",
+        ),
         "docs": ("doc", "documentation", "readme", "typo", "example", "guide", "link"),
-        "feature": ("feature", "add", "support", "allow", "improve", "request", "proposal", "new"),
+        "feature": (
+            "feature",
+            "add",
+            "support",
+            "allow",
+            "improve",
+            "request",
+            "proposal",
+            "new",
+        ),
         "question": ("?", "how", "what", "why", "can i", "could", "help", "question"),
     }
     score = 0
@@ -297,7 +317,9 @@ def assert_disjoint_outputs(named_records: dict[str, list[JsonObject]]) -> None:
         for record in records:
             record_id = issue_id(record)
             if record_id in seen:
-                raise ValueError(f"issue {record_id} appears in both {seen[record_id]} and {name}")
+                raise ValueError(
+                    f"issue {record_id} appears in both {seen[record_id]} and {name}"
+                )
             seen[record_id] = name
 
 
@@ -329,7 +351,9 @@ def build_summary(
         "files written:",
     ]
     if files_written:
-        lines.extend(f"  {name}: {display_path(path)}" for name, path in files_written.items())
+        lines.extend(
+            f"  {name}: {display_path(path)}" for name, path in files_written.items()
+        )
     else:
         lines.append("  none")
 
@@ -347,7 +371,9 @@ def build_summary(
 
     lines.append("SHA-256 hashes:")
     if output_hashes:
-        lines.extend(f"  {name}: {file_hash}" for name, file_hash in output_hashes.items())
+        lines.extend(
+            f"  {name}: {file_hash}" for name, file_hash in output_hashes.items()
+        )
     else:
         lines.append("  none")
     return "\n".join(lines)

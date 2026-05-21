@@ -32,25 +32,22 @@ notes
 
 ## RAG Golden Set
 
-Planned size: 25 question / ideal-answer / ground-truth-chunks triples.
+Size: 25 triples, distributed 8 `issue_only` / 5 `docs_only` / 12 `mixed` (D3.4).
 
-Requirements:
+Workflow (draft-first, freeze-after-ingestion):
 
-- Questions based on project docs and held-out resolved issues.
-- Ground-truth chunks must be known.
-- Held-out RAG issues must not leak into classifier training.
-- Stable ordering for CI diffing.
+- `uv run --directory ml python -m rag.golden` builds `data/evals/rag_golden.draft.jsonl` by
+  extracting grounded quotes from the chunk artifact (real maintainer comments + doc sections),
+  resolving each to stable parent + child chunk IDs. Drafts are `human_reviewed: false`.
+- A maintainer refines the grounded ideal answers and hand-labels 5/25 (judge agreement, D1.12),
+  then freezes `data/evals/rag_golden.jsonl`.
+- The validator (`rag.golden.validate_golden_examples`) enforces the 8/5/12 distribution,
+  referential integrity against `rag_chunks.jsonl`, and (for the frozen set) the
+  `human_reviewed` gate. Leakage is avoided: golden sources come only from the held-out issues
+  and the docs corpus, never from classifier training data.
 
-Planned fields:
-
-```text
-question_id
-question
-ideal_answer
-ground_truth_chunk_ids
-required_metadata_filters
-notes
-```
+Fields (final): `question`, `ideal_answer`, `ground_truth_sources`, `ground_truth_parent_ids`,
+`ground_truth_child_chunk_ids`, `tags`, `difficulty`, `source_type`, `human_reviewed`.
 
 # 2. Classification Pipeline Evaluation
 
@@ -100,18 +97,21 @@ Retrieval metrics:
 - Hit@5.
 - MRR@10.
 
-Generation metrics:
+Generation metrics (frozen Sonnet judge, strict JSON, fail-closed): faithfulness, answer
+relevancy, context usefulness, completeness, refusal quality, overall, pass rate.
 
-- Faithfulness.
-- Answer relevancy.
+Also evaluated on the same golden set:
 
-Planned output:
+- Embedding comparison: `bge-small-en-v1.5` vs `all-MiniLM-L6-v2` (D3.3).
+- Hybrid weight sweep: dense/sparse 0.25/0.75, 0.50/0.50, 0.75/0.25 (D3.8).
+
+Harness: `evals/rag_eval.py` — `uv run --project ml python -m evals.rag_eval`. Model/LLM deps are
+injected, so `--mock` runs the whole ladder deterministically offline and `--no-generation` gives
+retrieval-only metrics without an API key. Output:
 
 ```text
-eval_report.json
-rag_retrieval_metrics.json
-rag_generation_metrics.json
-retrieved_chunks_snapshot.json
+artifacts/evals/rag_eval_report.json        # variants + embedding_comparison + weight_sweep
+artifacts/evals/rag_retrieved_snapshots/    # retrieved-chunk snapshots (D3.11)
 ```
 
 # 4. LLM-as-a-Judge Alignment
@@ -171,3 +171,10 @@ Rules:
 - Regression below threshold blocks merge.
 
 Initial thresholds should only be frozen after the first real baseline run.
+
+RAG status (Day 3): the real local RAG eval has been completed on the frozen golden set, and
+the selected candidate is `parent_child_hybrid` with `bge-small-en-v1.5` at dense 0.50 /
+sparse 0.50. CI runs a dedicated **`rag-eval`** job in deterministic `--mock` mode against
+small committed fixtures, so it validates the harness path without Anthropic calls, model
+downloads, secrets, or gitignored local corpus artifacts. The full local real eval remains the
+source of the reported RAG quality numbers.
