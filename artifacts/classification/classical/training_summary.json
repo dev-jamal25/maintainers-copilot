@@ -1,7 +1,7 @@
 {
-  "artifact_dir": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-69\\test_evaluate_classical_writes0\\artifacts",
+  "artifact_dir": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-81\\test_evaluate_classical_writes0\\artifacts",
   "label_map_path": "artifacts/classification/classical/label_map.json",
-  "model_path": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-69\\test_evaluate_classical_writes0\\artifacts\\model.joblib",
+  "model_path": "C:\\Users\\Jamal\\AppData\\Local\\Temp\\pytest-of-Jamal\\pytest-81\\test_evaluate_classical_writes0\\artifacts\\model.joblib",
   "random_seed": 42,
   "train_examples": 32,
   "training_algorithm": "tfidf_logistic_regression",

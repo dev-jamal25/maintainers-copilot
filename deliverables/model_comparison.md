@@ -19,3 +19,40 @@ Choose the classical baseline for now because it has the highest test macro-F1, 
 - Classical and DistilBERT results are measured on the full classification test split.
 - The LLM baseline uses the Phase 6B balanced capped sample of 40 examples.
 - LLM cost is null because token pricing was not configured for the run.
+
+## Day 3 RAG eval results
+
+The real RAG evaluation was run against the frozen 25-example golden set in `data/evals/rag_golden.jsonl`.
+
+### Embedding comparison
+
+| Embedding model | Hit@5 | MRR@10 |
+|---|---:|---:|
+| `bge-small-en-v1.5` | 0.36 | 0.218 |
+| `all-MiniLM-L6-v2` | 0.32 | 0.180 |
+
+Selected embedding model: `bge-small-en-v1.5`.
+
+### Hybrid weighting
+
+Selected weighting: dense 0.50 / sparse 0.50.
+
+This weighting achieved the best Hit@5 at 0.36. Dense 0.75 / sparse 0.25 had a slightly higher MRR@10, but the difference was too small to outweigh the better Hit@5 from the balanced hybrid setting.
+
+### Selected pipeline
+
+Selected retrieval variant: `parent_child_hybrid`.
+
+| Metric | Value |
+|---|---:|
+| Hit@5 | 0.36 |
+| MRR@10 | 0.218 |
+| Faithfulness | 4.52 |
+| Answer relevancy | 4.28 |
+| Judge pass rate | 0.44 |
+
+### Interpretation
+
+The first real RAG eval confirms that bounded Airflow docs plus held-out resolved issues can support measurable retrieval. `bge-small-en-v1.5` outperformed `all-MiniLM-L6-v2`, and balanced hybrid retrieval gave the best overall trade-off.
+
+The judge pass rate is still modest, so the next improvement target is retrieval recall and context coverage rather than answer wording alone.

@@ -50,7 +50,9 @@ def read_jsonl(path: Path) -> list[JsonObject]:
                 continue
             parsed = json.loads(stripped)
             if not isinstance(parsed, dict):
-                raise ValueError(f"{display_path(path)}:{line_number} must contain a JSON object")
+                raise ValueError(
+                    f"{display_path(path)}:{line_number} must contain a JSON object"
+                )
             records.append(parsed)
     return records
 
@@ -205,7 +207,9 @@ async def fetch_comments(
         if not isinstance(parsed, list):
             raise ValueError(f"GitHub comments response for #{number} was not a list")
         comments.extend(
-            extract_comment_record(comment) for comment in parsed if isinstance(comment, dict)
+            extract_comment_record(comment)
+            for comment in parsed
+            if isinstance(comment, dict)
         )
         if len(parsed) < PER_PAGE:
             break
@@ -267,7 +271,9 @@ async def enrich_issues(
     return [record for _, record in indexed_records], rate_limit_remaining[0]
 
 
-def update_dataset_metadata(metadata_path: Path, output_path: Path, output_sha256: str) -> None:
+def update_dataset_metadata(
+    metadata_path: Path, output_path: Path, output_sha256: str
+) -> None:
     with metadata_path.open("r", encoding="utf-8") as f:
         metadata = json.load(f)
     if not isinstance(metadata, dict):
@@ -275,7 +281,9 @@ def update_dataset_metadata(metadata_path: Path, output_path: Path, output_sha25
 
     metadata["raw_input_path"] = display_path(output_path)
     metadata["raw_input_sha256"] = output_sha256
-    metadata["raw_comments_enriched_at"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    metadata["raw_comments_enriched_at"] = (
+        datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    )
 
     with metadata_path.open("w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2, sort_keys=True)
@@ -305,7 +313,9 @@ async def run() -> EnrichmentSummary:
     args = parse_args()
     token = os.getenv("GITHUB_TOKEN") or ""
     if not token:
-        raise SystemExit("GITHUB_TOKEN is required in local .env to fetch issue comments.")
+        raise SystemExit(
+            "GITHUB_TOKEN is required in local .env to fetch issue comments."
+        )
 
     repo = (os.getenv("GITHUB_REPO") or DEFAULT_REPO).strip() or DEFAULT_REPO
     input_path = resolve_repo_path(args.input)

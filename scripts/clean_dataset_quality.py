@@ -38,7 +38,9 @@ def read_jsonl(path: Path) -> list[dict[str, object]]:
                 continue
             parsed = json.loads(stripped)
             if not isinstance(parsed, dict):
-                raise ValueError(f"{display_path(path)}:{line_number} must contain a JSON object")
+                raise ValueError(
+                    f"{display_path(path)}:{line_number} must contain a JSON object"
+                )
             records.append(parsed)
     return records
 
@@ -170,7 +172,11 @@ def clean_records(
     for record in records:
         quality = record_quality(record)
         if should_drop(quality):
-            label = record.get("label") if isinstance(record.get("label"), str) else "(missing)"
+            label = (
+                record.get("label")
+                if isinstance(record.get("label"), str)
+                else "(missing)"
+            )
             dropped_per_class[label] = dropped_per_class.get(label, 0) + 1
             dropped.append(
                 {
@@ -233,7 +239,9 @@ def append_decision(
         if next_day == -1:
             existing = existing[:start].rstrip() + "\n\n"
         else:
-            existing = existing[:start].rstrip() + "\n\n" + existing[next_day:].lstrip("\n")
+            existing = (
+                existing[:start].rstrip() + "\n\n" + existing[next_day:].lstrip("\n")
+            )
 
     decision = f"""{marker}
 
@@ -264,7 +272,10 @@ auditability.
     if day_2_marker in existing:
         insertion_index = existing.index(day_2_marker)
         updated = (
-            existing[:insertion_index].rstrip() + "\n\n" + decision + existing[insertion_index:]
+            existing[:insertion_index].rstrip()
+            + "\n\n"
+            + decision
+            + existing[insertion_index:]
         )
     else:
         updated = existing.rstrip() + "\n\n" + decision
@@ -274,7 +285,9 @@ auditability.
 def load_carve_hashes(metadata: dict[str, object]) -> dict[str, str]:
     carve_outs = metadata.get("carve_outs")
     if not isinstance(carve_outs, dict):
-        raise ValueError("dataset_metadata.json does not contain regenerated carve_outs")
+        raise ValueError(
+            "dataset_metadata.json does not contain regenerated carve_outs"
+        )
 
     hashes: dict[str, str] = {}
     for key in ["golden_eval", "rag_holdout", "splittable_pool"]:

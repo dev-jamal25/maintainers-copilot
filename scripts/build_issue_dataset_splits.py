@@ -86,7 +86,9 @@ def load_label_mapping(path: Path = DEFAULT_MAPPING_PATH) -> LabelMapping:
     for target, labels in github_label_mapping.items():
         if target not in parsed_target_labels:
             raise ValueError(f"github_label_mapping contains unknown target: {target}")
-        if not isinstance(labels, list) or not all(isinstance(label, str) for label in labels):
+        if not isinstance(labels, list) or not all(
+            isinstance(label, str) for label in labels
+        ):
             raise ValueError(f"github_label_mapping.{target} must be a list of strings")
 
         normalized_labels = [normalize_label(label) for label in labels]
@@ -132,7 +134,9 @@ def map_issue_labels(
     if not matched_targets:
         return None, None, []
 
-    ordered_matches = [target for target in mapping.priority if target in matched_targets]
+    ordered_matches = [
+        target for target in mapping.priority if target in matched_targets
+    ]
     chosen_label = ordered_matches[0]
     return chosen_label, mapping.target_labels[chosen_label], ordered_matches
 
@@ -144,7 +148,8 @@ def map_issue_to_label(
     fetched_for_label = issue.get("fetched_for_label")
     fetched_for_github_label = issue.get("fetched_for_github_label")
     normalized_issue_labels = {
-        normalize_label(label) for label in extract_issue_label_names(issue.get("labels"))
+        normalize_label(label)
+        for label in extract_issue_label_names(issue.get("labels"))
     }
 
     if isinstance(fetched_for_label, str) and fetched_for_label:
@@ -230,7 +235,9 @@ def display_path(path: Path) -> str:
         return str(path)
 
 
-def output_record(issue: JsonObject, label: str, label_id: int, text: str) -> JsonObject:
+def output_record(
+    issue: JsonObject, label: str, label_id: int, text: str
+) -> JsonObject:
     return {
         "github_id": issue.get("github_id"),
         "number": issue.get("number"),
@@ -245,7 +252,9 @@ def output_record(issue: JsonObject, label: str, label_id: int, text: str) -> Js
     }
 
 
-def build_mapped_records(raw_issues: list[JsonObject], mapping: LabelMapping) -> ProcessedDataset:
+def build_mapped_records(
+    raw_issues: list[JsonObject], mapping: LabelMapping
+) -> ProcessedDataset:
     records: list[JsonObject] = []
     skipped_by_reason: Counter[str] = Counter()
     unmatched_label_stats: Counter[str] = Counter()
@@ -259,12 +268,16 @@ def build_mapped_records(raw_issues: list[JsonObject], mapping: LabelMapping) ->
             skipped_by_reason["missing_closed_at"] += 1
             continue
 
-        label, label_id, matched_labels, mapping_skip_reason = map_issue_to_label(issue, mapping)
+        label, label_id, matched_labels, mapping_skip_reason = map_issue_to_label(
+            issue, mapping
+        )
         if label is None or label_id is None:
             skipped_by_reason[mapping_skip_reason or "unmapped_labels"] += 1
             label_names = extract_issue_label_names(issue.get("labels"))
             if label_names:
-                unmatched_label_stats.update(normalize_label(name) for name in label_names)
+                unmatched_label_stats.update(
+                    normalize_label(name) for name in label_names
+                )
             else:
                 unmatched_label_stats["(no labels)"] += 1
             continue
@@ -299,7 +312,9 @@ def build_mapped_records(raw_issues: list[JsonObject], mapping: LabelMapping) ->
                 "missing": TARGET_ISSUES_PER_CLASS - usable_count,
             }
 
-    records = sorted(records, key=lambda record: parse_github_datetime(record["closed_at"]))
+    records = sorted(
+        records, key=lambda record: parse_github_datetime(record["closed_at"])
+    )
 
     metadata: JsonObject = {
         "raw_issue_count": len(raw_issues),
@@ -356,7 +371,9 @@ def print_export_summary(metadata: JsonObject, metadata_path: Path) -> None:
 
     raw_issue_count = int(metadata["raw_issue_count"])
     mapped_issue_count = int(metadata["mapped_issue_count"])
-    if raw_issue_count and (mapped_issue_count < 100 or mapped_issue_count / raw_issue_count < 0.2):
+    if raw_issue_count and (
+        mapped_issue_count < 100 or mapped_issue_count / raw_issue_count < 0.2
+    ):
         print(
             "WARNING: mapped issue count is low. Inspect unmatched_label_stats in "
             f"{metadata_path} and update ml/classification/label_mapping.yaml if needed."

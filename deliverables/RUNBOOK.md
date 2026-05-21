@@ -54,6 +54,34 @@ Expected areas to document later:
 - Build widget bundle.
 - Tag release.
 
+## 4.1 RAG corpus + eval (Day 3)
+
+Build the corpus and chunk artifacts (regenerable; gitignored under `data/`):
+
+```bash
+# Docs corpus: fetch pinned Airflow .rst, normalize, then issue corpus from the holdout.
+uv run --project backend python scripts/build_rag_corpus.py        # raw .rst + manifest
+uv run --project backend python scripts/rst_normalize.py           # -> rag_doc_corpus.jsonl
+uv run --project backend python scripts/build_issue_corpus.py      # -> rag_issue_corpus.jsonl
+# Chunk artifacts (advanced parent-child + naive baseline + manifest).
+uv run --directory ml python -m rag.build_chunks
+# Golden-set draft (grounded; human-review + 5/25 hand-labels required before freezing).
+uv run --directory ml python -m rag.golden
+```
+
+Run the RAG evaluation harness:
+
+```bash
+uv run --project ml python -m evals.rag_eval --mock           # deterministic offline smoke
+uv run --project ml python -m evals.rag_eval --no-generation  # real retrieval metrics (Hit@5/MRR@10)
+uv run --project ml python -m evals.rag_eval                  # full ladder + judge (needs ANTHROPIC_API_KEY)
+```
+
+Outputs: `artifacts/evals/rag_eval_report.json` and retrieved-chunk snapshots under
+`artifacts/evals/rag_retrieved_snapshots/`. CI uses the same harness in deterministic mock mode
+with small committed fixtures, writing `artifacts/evals/rag_eval_ci_report.json` so the gate does
+not depend on ignored local corpus artifacts, model downloads, Anthropic calls, or secrets.
+
 # 5. Monitoring and Access (Where to Look)
 
 _TODO: Fill after observability services are wired._

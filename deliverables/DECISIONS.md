@@ -310,8 +310,153 @@ auditability.
 
 
 # Day 3 decisions
+## D3.1 RAG docs corpus scope
 
-_TODO: Add Wednesday RAG/redaction/exception decisions after implementation._
+**Decision:** Use a bounded Airflow documentation corpus selected from recurring themes in `rag_holdout.jsonl`, not the full Airflow docs site.
+
+**Scope selection method:** Inspect the 100 held-out resolved issues, identify recurring maintainer-support themes, and ingest only docs that support those themes.
+
+**Included areas:** installation/environment, Core Concepts, DAGs, tasks, scheduling, scheduler/executor behaviour, operators/hooks, configuration, connections, variables, CLI, REST/public API, database migrations, troubleshooting, FAQ, best practices, and relevant how-to guides.
+
+**Provider docs policy:** Exclude broad provider docs by default because they are too large and would dilute retrieval. Add provider docs only when the RAG golden set proves they are needed. Kubernetes-related docs are the only likely early exception.
+
+**Reasoning:** The corpus should match realistic Airflow maintainer questions from the held-out issues, not every possible Airflow topic.
+
+## D3.2 Chunking strategy
+
+**Decision:** Use hierarchical parent-child chunking.
+
+**Parent chunks:** Airflow markdown/header sections, documentation source sections, or issue/comment-level source blocks.
+
+**Child chunks:** smaller retrievable chunks generated from each parent.
+
+**Default parameters:** parent = natural section; child = 350–500 tokens; overlap = 50–75 tokens.
+
+**Reasoning:** Parent-child chunking gives precise retrieval while preserving enough parent context for grounded answer generation. It is the non-naive chunking strategy used to beat the fixed-size baseline.
+
+## D3.3 Embedding comparison
+
+**Decision:** Use `bge-small-en-v1.5` as the planned production embedding model and compare it against `all-MiniLM-L6-v2`.
+
+**Reasoning:** `bge-small-en-v1.5` is the intended stronger local embedding model. `all-MiniLM-L6-v2` is free, small, fast, and easy to run as a realistic baseline.
+
+**Validation rule:** The final embedding choice must be backed by Hit@5 and MRR@10 on the RAG golden set.
+
+## D3.4 RAG golden triples
+
+**Decision:** Build 25 RAG golden triples using a draft-first, finalize-after-ingestion workflow.
+
+**Draft stage:** Create draft examples from `rag_holdout.jsonl` and matched Airflow docs before chunking.
+
+**Draft fields:** `question`, `ideal_answer`, `ground_truth_sources`, `tags`, `difficulty`, and `source_type`.
+
+**Source types:** `issue_only`, `docs_only`, and `mixed`.
+
+**Distribution target:** 8 issue-only, 5 docs-only, and 12 mixed issue + docs examples.
+
+**Grounding rule:** Ideal answers must come from maintainer comments, Airflow docs, or both. Do not write generic Airflow advice from memory.
+
+**After ingestion:** Resolve source references into stable parent and child chunk IDs.
+
+**Final file:** `data/evals/rag_golden.jsonl`.
+
+**Final fields:** `question`, `ideal_answer`, `ground_truth_sources`, `ground_truth_parent_ids`, `ground_truth_child_chunk_ids`, `tags`, `difficulty`, and `source_type`.
+
+**Freeze policy:** Freeze the golden set before retrieval tuning. Only edit later for factual errors, duplicate examples, invalid examples, or broken source/chunk IDs.
+
+## D3.5 Judge rubric prompt
+
+**Decision:** Use a versioned frozen judge rubric prompt stored at `backend/prompts/rag_judge_rubric_v1.md`.
+
+**Judge model:** Claude Sonnet 4.6.
+
+**Generator model:** Claude Haiku 4.5.
+
+**Rubric rule:** The judge evaluates only the provided question, retrieved context, generated answer, ideal answer, and chunk IDs. It must not use outside Airflow knowledge.
+
+**Scored dimensions:** faithfulness, answer relevancy, context usefulness, completeness, refusal quality, and overall score.
+
+**Output:** strict JSON only.
+
+**Pass rule:** Normal answers pass only when faithfulness, answer relevancy, and overall are each at least 4/5. Insufficient-context answers pass only when refusal quality is at least 4/5 and there are no unsupported claims.
+
+## D3.6 Metadata schema
+
+**Decision:** Attach a minimal stable metadata schema to every chunk before indexing.
+
+**Fields:** `chunk_id`, `parent_id`, `source_type`, `source_id`, `title`, `url`, `section_path`, `airflow_area`, `tags`, `version`, `github_issue_id`, `github_comment_id`, `created_at`, and `closed_at`.
+
+**Reasoning:** Metadata is required for filtering, debugging, golden-set references, and explaining retrieval results.
+
+## D3.7 Chunk ID policy
+
+**Decision:** Use stable, human-readable IDs for parent and child chunks.
+
+**Patterns:**
+- `doc:{source_id}:parent:{n}`
+- `doc:{source_id}:parent:{n}:child:{m}`
+- `issue:{github_id}:comment:{comment_id}:parent:{n}`
+- `issue:{github_id}:comment:{comment_id}:child:{m}`
+
+**Reasoning:** Stable IDs are required for `rag_golden.jsonl`, retrieval metrics, rerun consistency, and debugging.
+
+## D3.8 Hybrid retrieval weighting
+
+**Decision:** Do not guess the final sparse/dense retrieval weight manually. Sweep a small set and pick the best result on the golden set.
+
+**Initial sweep:** dense 0.25 / sparse 0.75, dense 0.50 / sparse 0.50, and dense 0.75 / sparse 0.25.
+
+**Selection metrics:** Hit@5 and MRR@10.
+
+## D3.9 Multi-query transformation
+
+**Decision:** Use 3 query rewrites by default.
+
+**Reasoning:** Three rewrites are enough to improve recall without making latency and LLM cost too high for the MVP.
+
+## D3.10 Retrieval defaults
+
+**Decision:** Use standard defaults first, then tune only if evals show weakness.
+
+**Defaults:** dense top_k = 20, sparse top_k = 20, hybrid merged top_k = 30, rerank top_k = 10, final context chunks = 5.
+
+## D3.11 Retrieved chunk snapshots
+
+**Decision:** Store retrieved-chunk snapshots for the last 50 conversations.
+
+**Storage:** MinIO.
+
+**Format:** JSON.
+
+**Reasoning:** This gives enough traceability for debugging and demo evidence without overbuilding retention.
+
+## D3.12 RAG eval thresholds
+
+**Decision:** Do not freeze RAG thresholds before the first real baseline run.
+
+**Reasoning:** Thresholds must be non-zero and based on measured results. First run the naive baseline and the initial advanced RAG variant, then set meaningful CI thresholds.
+
+**Decision:** Use `bge-small-en-v1.5` with the `parent_child_hybrid` retrieval pipeline as the current Day 3 RAG candidate.
+
+**Embedding comparison:**
+- `bge-small-en-v1.5`: Hit@5 = 0.36, MRR@10 = 0.218.
+- `all-MiniLM-L6-v2`: Hit@5 = 0.32, MRR@10 = 0.180.
+
+**Hybrid weighting result:**
+The selected hybrid weighting is dense 0.50 / sparse 0.50. This achieved the best Hit@5 at 0.36. Dense 0.75 / sparse 0.25 had a nominally higher MRR@10, but the difference was too small to justify sacrificing the stronger Hit@5.
+
+**Chosen variant:**
+`parent_child_hybrid`.
+
+**Final selected pipeline metrics:**
+- Hit@5 = 0.36.
+- MRR@10 = 0.218.
+- Faithfulness = 4.52.
+- Answer relevancy = 4.28.
+- Judge pass rate = 0.44.
+
+**Reasoning:**
+The chosen pipeline gives the best balance of retrieval success and answer quality. The 44% judge pass rate shows there is still room to improve recall and context coverage, but the faithfulness and answer relevancy scores indicate that when useful context is retrieved, the generated answers are well grounded.
 
 # Day 4 decisions
 

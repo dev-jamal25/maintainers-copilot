@@ -115,6 +115,30 @@ jobs:
       - name: Model-server pytest
         run: uv run pytest -q
 
+  rag-eval:
+    runs-on: ubuntu-latest
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python 3.12
+        run: uv python install 3.12
+      - name: Sync ML dependencies
+        run: uv sync --project ml --dev
+      - name: RAG eval mock gate
+        run: >
+          uv run --project ml python -m evals.rag_eval --mock
+          --advanced-chunks ml/tests/fixtures/rag/ci_advanced_chunks.jsonl
+          --naive-chunks ml/tests/fixtures/rag/ci_naive_chunks.jsonl
+          --golden ml/tests/fixtures/rag/ci_golden.jsonl
+          --thresholds ml/tests/fixtures/rag/ci_thresholds.json
+          --report artifacts/evals/rag_eval_ci_report.json
+          --snapshot-dir artifacts/evals/rag_ci_retrieved_snapshots
+
   repo-hygiene:
     runs-on: ubuntu-latest
     steps:
@@ -138,6 +162,5 @@ jobs:
       - name: Build all compose images
         run: docker compose build
 
-# TODO(day-3): add rag-eval once RAG golden set exists.
 # TODO(day-3): add redaction-test once redaction layer exists.
 # TODO(day-4): add stack-smoke-test once compose stack exists.

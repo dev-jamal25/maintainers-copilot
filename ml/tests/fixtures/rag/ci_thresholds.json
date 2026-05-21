@@ -1,0 +1,8 @@
+{
+  "rag": {
+    "required": true,
+    "required_reason": "CI mock gate: the deterministic RAG eval fixture must keep retrieving its known chunks.",
+    "hit_at_5": 0.8,
+    "mrr_at_10": 0.8
+  }
+}
