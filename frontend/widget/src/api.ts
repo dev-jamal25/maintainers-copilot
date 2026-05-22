@@ -23,22 +23,22 @@ export async function fetchConfig(apiBase: string, widgetId: string): Promise<Wi
   return (await response.json()) as WidgetConfig;
 }
 
-// Consume the backend SSE stream. /chat/stream is a POST endpoint, so EventSource (GET-only) can't be
-// used; we read the response body and parse the `event:`/`data:` frames ourselves.
+// Consume the anonymous widget SSE stream. The widget is public (no auth) and scoped by widget_id;
+// the backend authorizes by request Origin (CORS) against the widget's allowed_origins. The endpoint
+// is POST, so EventSource (GET-only) can't be used; we read the body and parse the SSE frames.
 export async function* streamChat(
   apiBase: string,
-  body: { message: string; conversation_id?: string },
-  token?: string,
+  widgetId: string,
+  body: { message: string; session_id?: string },
 ): AsyncGenerator<SSEMessage> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  const response = await fetch(`${apiBase}/chat/stream`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const response = await fetch(
+    `${apiBase}/widgets/${encodeURIComponent(widgetId)}/chat/stream`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
   if (!response.ok || !response.body) {
     throw new Error(`chat request failed: ${response.status}`);
   }

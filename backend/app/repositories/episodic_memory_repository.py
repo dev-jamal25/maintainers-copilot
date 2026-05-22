@@ -97,9 +97,7 @@ class EpisodicMemoryRepository:
         ]
 
     async def list_recent(self, user_id: UUID, *, limit: int = 50) -> list[EpisodicMemory]:
-        result = await self._session.execute(
-            _LIST_RECENT_SQL, {"user_id": user_id, "limit": limit}
-        )
+        result = await self._session.execute(_LIST_RECENT_SQL, {"user_id": user_id, "limit": limit})
         return [
             EpisodicMemory(
                 id=row["id"],

@@ -59,13 +59,15 @@ class FakeChatStore:
     ) -> UUID:
         return conversation_id or uuid4()
 
-    async def load_history(self, conversation_id: UUID) -> list[dict[str, Any]]:
+    async def load_history(self, conversation_id: UUID, *, user_id: UUID) -> list[dict[str, Any]]:
         return []
 
-    async def add_user_message(self, conversation_id: UUID, content: str) -> None:
+    async def add_user_message(self, conversation_id: UUID, content: str, *, user_id: UUID) -> None:
         self.user_messages.append(content)
 
-    async def add_assistant_message(self, conversation_id: UUID, content: str) -> None:
+    async def add_assistant_message(
+        self, conversation_id: UUID, content: str, *, user_id: UUID
+    ) -> None:
         self.assistant_messages.append(content)
 
     async def commit(self) -> None:

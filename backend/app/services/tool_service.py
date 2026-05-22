@@ -9,6 +9,7 @@ exposes the Anthropic tool definitions derived from the domain input schemas.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any, Protocol
 from uuid import UUID
@@ -53,8 +54,13 @@ _TOOL_INPUTS: dict[ToolName, type[BaseModel]] = {
 }
 
 
-def tool_specs() -> list[dict[str, Any]]:
-    """Anthropic tool definitions (name/description/input_schema) for every tool."""
+def tool_specs(allowed: Iterable[ToolName] | None = None) -> list[dict[str, Any]]:
+    """Anthropic tool definitions (name/description/input_schema).
+
+    With ``allowed`` set, only those tools are exposed to the model (used to restrict the anonymous
+    widget chat to a widget's enabled tools).
+    """
+    allowed_set = set(ToolName) if allowed is None else set(allowed)
     return [
         {
             "name": tool.value,
@@ -62,6 +68,7 @@ def tool_specs() -> list[dict[str, Any]]:
             "input_schema": _TOOL_INPUTS[tool].model_json_schema(),
         }
         for tool in ToolName
+        if tool in allowed_set
     ]
 
 

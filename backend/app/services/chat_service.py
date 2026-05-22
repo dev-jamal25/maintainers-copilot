@@ -21,6 +21,7 @@ from app.domain.chat import SSEEventType
 from app.domain.tools import ToolName
 from app.infra.llm import ToolCallingLLM
 from app.infra.redaction import redact_value
+from app.infra.tracing import TracingClient, traced
 from app.services.tool_service import ToolService, tool_specs
 
 logger = logging.getLogger(__name__)
@@ -48,11 +49,15 @@ class ChatService:
         tools: ToolService,
         max_iterations: int = 5,
         max_tokens: int = 1024,
+        allowed_tools: frozenset[ToolName] | None = None,
+        tracing: TracingClient | None = None,
     ) -> None:
         self._llm = llm
         self._tools = tools
         self._max_iterations = max_iterations
         self._max_tokens = max_tokens
+        self._allowed_tools = allowed_tools
+        self._tracing = tracing
 
     async def stream(
         self,
@@ -61,15 +66,17 @@ class ChatService:
         history: list[dict[str, Any]],
         user_message: str,
         request_id: str | None = None,
+        trace_id: str | None = None,
     ) -> AsyncIterator[ChatEvent]:
         system = load_prompt(_SYSTEM_PROMPT)
-        specs = tool_specs()
+        specs = tool_specs(self._allowed_tools)
         messages: list[dict[str, Any]] = [*history, {"role": "user", "content": user_message}]
 
         for _ in range(self._max_iterations):
-            turn = await self._llm.converse(
-                system=system, messages=messages, tools=specs, max_tokens=self._max_tokens
-            )
+            async with traced(self._tracing, "chat.llm_turn", trace_id=trace_id):
+                turn = await self._llm.converse(
+                    system=system, messages=messages, tools=specs, max_tokens=self._max_tokens
+                )
             messages.append({"role": "assistant", "content": self._assistant_content(turn)})
 
             if not turn.tool_calls:
@@ -83,9 +90,15 @@ class ChatService:
                     SSEEventType.TOOL_CALL,
                     {"tool": call.name, "input": redact_value(call.input)},
                 )
-                payload, is_error = await self._run_tool(
-                    call.name, call.input, user_id=user_id, request_id=request_id
-                )
+                async with traced(
+                    self._tracing,
+                    f"chat.tool.{call.name}",
+                    trace_id=trace_id,
+                    metadata={"tool": call.name},
+                ):
+                    payload, is_error = await self._run_tool(
+                        call.name, call.input, user_id=user_id, request_id=request_id
+                    )
                 yield ChatEvent(
                     SSEEventType.TOOL_RESULT,
                     {"tool": call.name, "is_error": is_error, "result": redact_value(payload)},
@@ -112,6 +125,7 @@ class ChatService:
         history: list[dict[str, Any]],
         user_message: str,
         request_id: str | None = None,
+        trace_id: str | None = None,
     ) -> ChatResult:
         result = ChatResult(answer="")
         async for event in self.stream(
@@ -119,6 +133,7 @@ class ChatService:
             history=history,
             user_message=user_message,
             request_id=request_id,
+            trace_id=trace_id,
         ):
             result.events.append(event)
             if event.type in (SSEEventType.TOKEN, SSEEventType.DONE):
@@ -146,5 +161,7 @@ class ChatService:
             tool = ToolName(name)
         except ValueError:
             return {"error": {"code": "unknown_tool", "message": f"no tool named {name}"}}, True
+        if self._allowed_tools is not None and tool not in self._allowed_tools:
+            return {"error": {"code": "tool_not_allowed", "message": f"{name} is disabled"}}, True
         outcome = await self._tools.run(tool, raw_input, user_id=user_id, request_id=request_id)
         return outcome.result.model_dump(mode="json"), outcome.is_error

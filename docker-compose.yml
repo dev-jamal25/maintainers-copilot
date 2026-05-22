@@ -7,13 +7,15 @@ services:
       dockerfile: docker/Dockerfile
     command: >
       sh -c "uv run --no-dev python -m app.core.lifespan &&
-             uv run --no-dev python -c 'import time; print(\"api placeholder: startup checks passed; sleeping\", flush=True); time.sleep(10**9)'"
+             uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       VAULT_ADDR: http://vault:8200
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-dev-only-root-token}
       DATABASE_URL: postgresql+asyncpg://${DATABASE_USER:-maintainers_copilot}@db:5432/${DATABASE_NAME:-maintainers_copilot}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse-placeholder.local}
       TRACING_ENABLED: ${TRACING_ENABLED:-true}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      MODEL_SERVER_URL: ${MODEL_SERVER_URL:-http://model-server:8001}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
@@ -27,6 +29,8 @@ services:
         condition: service_started
       minio:
         condition: service_started
+      model-server:
+        condition: service_started
     networks:
       - app_network
 
@@ -34,8 +38,13 @@ services:
     build:
       context: ./frontend/streamlit
       dockerfile: docker/Dockerfile
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-http://api:8000}
     ports:
       - "${CHATBOT_PORT:-8501}:8501"
+    depends_on:
+      api:
+        condition: service_started
     networks:
       - app_network
 

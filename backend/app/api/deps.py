@@ -13,10 +13,22 @@ from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
+from app.infra.model_server_client import ModelServerClient
+from app.infra.tracing import TracingClient
 
 
 def get_settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
+
+
+def get_model_server(request: Request) -> ModelServerClient:
+    """The process-wide model-server client built in the lifespan."""
+    return cast(ModelServerClient, request.app.state.model_server)
+
+
+def get_tracing(request: Request) -> TracingClient:
+    """The process-wide tracing client built in the lifespan (Null when not configured)."""
+    return cast(TracingClient, request.app.state.tracing)
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
@@ -33,3 +45,5 @@ def get_request_id(request: Request) -> str:
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RequestIdDep = Annotated[str, Depends(get_request_id)]
+ModelServerDep = Annotated[ModelServerClient, Depends(get_model_server)]
+TracingDep = Annotated[TracingClient, Depends(get_tracing)]

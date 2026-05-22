@@ -6,13 +6,16 @@ interface Message {
   content: string;
 }
 
-// widget_id + api_base come from the iframe URL query string (set by the loader/embed route).
-function readParams(): { widgetId: string | null; apiBase: string; token?: string } {
+// widget_id + api_base come from the embed page's mount-div data attributes (set by the API embed
+// route), falling back to the iframe URL query string for standalone use.
+function readParams(): { widgetId: string | null; apiBase: string } {
+  const root =
+    document.getElementById("maintainers-copilot-root") ?? document.getElementById("root");
   const params = new URLSearchParams(window.location.search);
   return {
-    widgetId: params.get("widget_id"),
-    apiBase: params.get("api_base") || window.location.origin,
-    token: params.get("token") || undefined,
+    widgetId: root?.getAttribute("data-widget-id") ?? params.get("widget_id"),
+    apiBase:
+      root?.getAttribute("data-api-base") ?? params.get("api_base") ?? window.location.origin,
   };
 }
 
@@ -30,14 +33,14 @@ function useResizeBroadcast(ref: React.RefObject<HTMLDivElement>): void {
 }
 
 export function Widget(): JSX.Element {
-  const { widgetId, apiBase, token } = readParams();
+  const { widgetId, apiBase } = readParams();
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const conversationId = useRef<string | undefined>(undefined);
+  const sessionId = useRef<string | undefined>(undefined);
   const rootRef = useRef<HTMLDivElement>(null);
   useResizeBroadcast(rootRef);
 
@@ -53,7 +56,7 @@ export function Widget(): JSX.Element {
 
   async function send(): Promise<void> {
     const text = input.trim();
-    if (!text || busy) return;
+    if (!text || busy || !widgetId) return;
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setBusy(true);
@@ -61,13 +64,12 @@ export function Widget(): JSX.Element {
     let answer = "";
     setMessages((prev) => [...prev, { role: "assistant", content: "…" }]);
     try {
-      for await (const event of streamChat(
-        apiBase,
-        { message: text, conversation_id: conversationId.current },
-        token,
-      )) {
-        if (event.event === "conversation") {
-          conversationId.current = String(event.data.conversation_id ?? "");
+      for await (const event of streamChat(apiBase, widgetId, {
+        message: text,
+        session_id: sessionId.current,
+      })) {
+        if (event.event === "session") {
+          sessionId.current = String(event.data.session_id ?? "");
         } else if (event.event === "token" || event.event === "done") {
           answer = String(event.data.text ?? answer);
           setMessages((prev) => {

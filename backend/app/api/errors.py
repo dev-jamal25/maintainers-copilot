@@ -35,6 +35,8 @@ def register_request_id_middleware(app: FastAPI) -> None:
     ) -> Response:
         request_id = request.headers.get(REQUEST_ID_HEADER) or uuid4().hex
         request.state.request_id = request_id
+        # One trace per request; the chat/tool spans use this as their trace id.
+        request.state.trace_id = request_id
         response = await call_next(request)
         response.headers[REQUEST_ID_HEADER] = request_id
         return response
@@ -51,6 +53,7 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "code": exc.code,
                 "status_code": exc.status_code,
                 "request_id": request_id,
+                "trace_id": request_id,
                 "detail": redact(exc.detail) if exc.detail else None,
             },
         )
@@ -85,7 +88,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         request_id = _request_id(request)
         logger.exception(
             "unhandled_exception",
-            extra={"method": request.method, "path": request.url.path, "request_id": request_id},
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "request_id": request_id,
+                "trace_id": request_id,
+            },
         )
         return JSONResponse(
             status_code=500,

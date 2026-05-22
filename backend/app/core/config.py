@@ -154,6 +154,20 @@ class AuthSettings(BaseSettings):
     )
 
 
+class WidgetRuntimeSettings(BaseSettings):
+    """Non-secret runtime config for the embeddable widget."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", populate_by_name=True
+    )
+
+    public_url: str = Field(
+        default="http://localhost:3000",
+        validation_alias="WIDGET_PUBLIC_URL",
+        description="Public base URL of the static widget bundle service.",
+    )
+
+
 @dataclass
 class Settings:
     """Aggregated app settings; built from env-derived sub-settings.
@@ -171,3 +185,4 @@ class Settings:
     llm: LLMSettings = field(default_factory=LLMSettings)
     minio: MinioSettings = field(default_factory=MinioSettings)
     auth: AuthSettings = field(default_factory=AuthSettings)
+    widget: WidgetRuntimeSettings = field(default_factory=WidgetRuntimeSettings)

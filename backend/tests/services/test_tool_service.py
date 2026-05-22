@@ -156,3 +156,8 @@ def test_tool_specs_cover_all_tools() -> None:
     names = {spec["name"] for spec in specs}
     assert names == {t.value for t in ToolName}
     assert all("input_schema" in spec for spec in specs)
+
+
+def test_tool_specs_filtered_by_allowed() -> None:
+    specs = tool_specs([ToolName.ANSWER_WITH_RAG])
+    assert {spec["name"] for spec in specs} == {"answer_with_rag"}

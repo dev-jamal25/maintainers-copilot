@@ -1,3 +1,6 @@
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Protocol
 
 import langfuse
@@ -5,6 +8,8 @@ import langfuse
 from app.core.config import Settings
 from app.infra.errors import TracingConfigError, TracingUnavailableError
 from app.infra.vault import VaultClient
+
+logger = logging.getLogger(__name__)
 
 _VAULT_LANGFUSE_PATH = "maintainers-copilot/langfuse"
 
@@ -67,6 +72,28 @@ class LangfuseTracingClient:
 
     def flush(self) -> None:
         self._langfuse.flush()
+
+
+@asynccontextmanager
+async def traced(
+    client: TracingClient | None,
+    name: str,
+    *,
+    trace_id: str | None = None,
+    metadata: dict[str, object] | None = None,
+) -> AsyncIterator[None]:
+    """Best-effort span around an operation (CLAUDE.md: span LLM/tool/RAG/rerank/memory calls).
+
+    No-ops for ``None`` / ``NullTracingClient`` and never raises — observability must not break a
+    request. This is the single hook the services use; when ``start_span`` gains real nesting the
+    call sites do not change.
+    """
+    if client is not None:
+        try:
+            client.start_span(name, trace_id=trace_id, metadata=metadata)
+        except Exception:  # noqa: BLE001 - tracing must never break the request path
+            logger.debug("tracing span failed for %s", name, exc_info=True)
+    yield
 
 
 def build_tracing_client(

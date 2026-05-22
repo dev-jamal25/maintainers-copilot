@@ -11,10 +11,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.api.auth import CurrentUserDep
-from app.api.deps import SessionDep, get_settings
-from app.core.config import Settings
+from app.api.deps import ModelServerDep, SessionDep
 from app.domain.memory import EpisodicMemory
-from app.infra.model_server_client import ModelServerClient
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.episodic_memory_repository import EpisodicMemoryRepository
 from app.services.memory_service import MemoryService
@@ -22,12 +20,10 @@ from app.services.memory_service import MemoryService
 router = APIRouter(tags=["memory"])
 
 
-def get_memory_service(
-    session: SessionDep, settings: Annotated[Settings, Depends(get_settings)]
-) -> MemoryService:
+def get_memory_service(session: SessionDep, model_server: ModelServerDep) -> MemoryService:
     return MemoryService(
         memories=EpisodicMemoryRepository(session),
-        embedder=ModelServerClient(settings.model_server),
+        embedder=model_server,
         audit=AuditRepository(session),
     )
 
