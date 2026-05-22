@@ -5,7 +5,9 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from app.routes.embed import router as embed_router
 from app.routes.ner import router as ner_router
+from app.routes.rerank import router as rerank_router
 from app.routes.summarization import router as summarization_router
 
 logger = logging.getLogger(__name__)
@@ -15,6 +17,8 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Maintainer's Copilot Model Server")
     app.include_router(ner_router)
     app.include_router(summarization_router)
+    app.include_router(embed_router)
+    app.include_router(rerank_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:

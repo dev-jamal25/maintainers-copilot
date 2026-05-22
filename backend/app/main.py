@@ -1,2 +1,26 @@
-# Maintainer's Copilot backend entrypoint placeholder.
-# FastAPI app instance lands in a later Day 1 task.
+"""Maintainer's Copilot backend entrypoint.
+
+``create_app()`` wires the lifespan, request-id middleware, the single domain-exception handler, and
+the feature routers. Routes only coordinate HTTP concerns; business logic lives in services.
+"""
+
+from __future__ import annotations
+
+from fastapi import FastAPI
+
+from app.api.auth import router as auth_router
+from app.api.errors import register_exception_handlers, register_request_id_middleware
+from app.api.health import router as health_router
+from app.core.app_lifespan import lifespan
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="Maintainer's Copilot API", lifespan=lifespan)
+    register_request_id_middleware(app)
+    register_exception_handlers(app)
+    app.include_router(health_router)
+    app.include_router(auth_router)
+    return app
+
+
+app = create_app()

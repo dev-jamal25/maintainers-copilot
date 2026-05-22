@@ -85,7 +85,7 @@ artifacts/classification/classical/*
 *.h5
 *.parquet
 *.feather
-
+.claude/skills/
 # Logs
 *.log
 logs/

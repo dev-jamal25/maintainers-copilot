@@ -13,6 +13,13 @@ dependencies = [
     "pyyaml",
     "pydantic-settings",
     "sqlalchemy",
+    "fastapi>=0.136.1",
+    "uvicorn[standard]>=0.47.0",
+    "fastapi-users[sqlalchemy]>=15.0.5",
+    "redis>=7.4.0",
+    "anthropic>=0.104.0",
+    "sse-starlette>=3.4.4",
+    "python-multipart>=0.0.29",
 ]
 
 [dependency-groups]

@@ -27,5 +27,10 @@ def test_baseline_migration_enables_and_drops_vector_extension() -> None:
     assert "down_revision: str | None = None" in contents
 
 
-def test_base_metadata_has_no_tables_yet() -> None:
-    assert Base.metadata.tables == {}
+def test_base_metadata_contains_only_user_table() -> None:
+    # fastapi-users requires the User table to be ORM-mapped (Day 4). All other feature tables
+    # (rag_chunks, conversations, messages, widgets, invitations, episodic_memories, audit_log) are
+    # raw-SQL and intentionally absent from Base.metadata — see app/db/models.py.
+    import app.db.models  # noqa: F401  -- ensure ORM models are registered on Base.metadata
+
+    assert set(Base.metadata.tables) == {"users"}

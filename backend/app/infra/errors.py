@@ -18,6 +18,18 @@ class VaultSecretNotFoundError(VaultError):
     """A KV v2 path returned no secret or no data envelope."""
 
 
+class ModelServerError(Exception):
+    """Base class for model-server adapter errors."""
+
+
+class ModelServerUnavailableError(ModelServerError):
+    """The model-server was unreachable, timed out, or kept returning 5xx after retries."""
+
+
+class ModelServerResponseError(ModelServerError):
+    """The model-server returned a 4xx or a response body the adapter could not parse."""
+
+
 class TracingError(Exception):
     """Base class for tracing adapter errors."""
 

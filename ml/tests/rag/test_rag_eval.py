@@ -24,6 +24,7 @@ from evals.rag_eval import (  # noqa: E402
     MockEmbedder,
     aggregate_generation,
     embedding_comparison_specs,
+    estimate_live_llm_calls,
     failed_judge,
     gate_against_thresholds,
     hit_at_k,
@@ -216,6 +217,26 @@ def test_spec_counts_match_decisions() -> None:
     assert len(variant_ladder()) == 5
     assert len(embedding_comparison_specs()) == 2
     assert len(weight_sweep_specs()) == 3
+
+
+def test_estimate_live_llm_calls_with_generation() -> None:
+    specs = variant_ladder() + embedding_comparison_specs() + weight_sweep_specs()
+    # 10 variants total, exactly one multi-query variant (the full ladder tail).
+    estimate = estimate_live_llm_calls(specs, 3, generation_enabled=True)
+    assert estimate["generation"] == 10 * 3
+    assert estimate["judge"] == 10 * 3
+    assert estimate["rewrite"] == 1 * 3
+    assert estimate["total"] == 30 + 30 + 3
+
+
+def test_estimate_live_llm_calls_retrieval_only() -> None:
+    specs = variant_ladder() + embedding_comparison_specs() + weight_sweep_specs()
+    # Generation disabled: no generation/judge calls, only multi-query rewrites remain.
+    estimate = estimate_live_llm_calls(specs, 3, generation_enabled=False)
+    assert estimate["generation"] == 0
+    assert estimate["judge"] == 0
+    assert estimate["rewrite"] == 1 * 3
+    assert estimate["total"] == 3
 
 
 def test_gate_against_thresholds() -> None:

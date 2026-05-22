@@ -11,10 +11,17 @@ with no downloads or API calls (used by tests/CI). Producing the real frozen num
 non-zero ``rag`` thresholds (D3.12) is the documented follow-up; until ``eval_thresholds.yaml``
 gains a ``rag`` block this run is informational and does not gate.
 
+Live-LLM safety (D4): a non-mock run makes NO Anthropic calls unless ``--allow-live-llm`` is passed.
+Without the flag, a non-mock run is retrieval-only (real local embedder + reranker, deterministic
+multi-query rewrites, no generation/judging) so CI and casual runs cannot accidentally spend. When
+``--allow-live-llm`` is set, the harness prints the estimated generation/judge/rewrite call counts
+before proceeding.
+
 Run:
-    uv run --project ml python -m evals.rag_eval --mock           # deterministic smoke
-    uv run --project ml python -m evals.rag_eval --no-generation  # real retrieval metrics only
-    uv run --project ml python -m evals.rag_eval                  # full (needs models + API key)
+    uv run --project ml python -m evals.rag_eval --mock                    # deterministic smoke (CI)
+    uv run --project ml python -m evals.rag_eval                           # retrieval-only, no API spend
+    uv run --project ml python -m evals.rag_eval --allow-live-llm          # full (needs models + API key)
+    uv run --project ml python -m evals.rag_eval --allow-live-llm --no-generation  # +multi-query rewrites only
 """
 
 from __future__ import annotations
@@ -710,6 +717,39 @@ def mock_judge_fn(payload: JsonObject) -> str:
     )
 
 
+# --- Live-LLM safety guard ---------------------------------------------------
+
+
+def estimate_live_llm_calls(
+    specs: list[VariantSpec], num_goldens: int, *, generation_enabled: bool
+) -> dict[str, int]:
+    """Estimate the Anthropic call counts a live run would make.
+
+    - generation + judging: one of each per (variant x golden) when generation is enabled.
+    - multi-query rewrites: one per (multi-query variant x golden), regardless of generation,
+      because the retrieval pipeline rewrites queries for multi-query variants before scoring.
+    """
+    num_variants = len(specs)
+    num_multiquery = sum(1 for spec in specs if spec.config.multi_query)
+    generation_calls = num_variants * num_goldens if generation_enabled else 0
+    judge_calls = num_variants * num_goldens if generation_enabled else 0
+    rewrite_calls = num_multiquery * num_goldens
+    return {
+        "generation": generation_calls,
+        "judge": judge_calls,
+        "rewrite": rewrite_calls,
+        "total": generation_calls + judge_calls + rewrite_calls,
+    }
+
+
+def print_live_llm_estimate(estimate: dict[str, int]) -> None:
+    print("LIVE LLM RUN — estimated Anthropic calls before proceeding:")
+    print(f"  generation (Haiku): {estimate['generation']}")
+    print(f"  judge (Sonnet):     {estimate['judge']}")
+    print(f"  multi-query rewrite:{estimate['rewrite']:>4}")
+    print(f"  TOTAL:              {estimate['total']}")
+
+
 # --- CLI ---------------------------------------------------------------------
 
 
@@ -720,6 +760,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--no-generation", action="store_true", help="Skip answer generation + judging."
+    )
+    parser.add_argument(
+        "--allow-live-llm",
+        action="store_true",
+        help=(
+            "Explicitly permit real Anthropic calls (generation, judging, multi-query rewrites) "
+            "in a non-mock run. Without this flag a non-mock run is retrieval-only (no API spend)."
+        ),
     )
     parser.add_argument("--advanced-chunks", type=Path, default=DEFAULT_ADVANCED_CHUNKS)
     parser.add_argument("--naive-chunks", type=Path, default=DEFAULT_NAIVE_CHUNKS)
@@ -761,12 +809,42 @@ def main() -> int:
         )
         judge_fn: JudgeFn | None = None if args.no_generation else mock_judge_fn
         notes.append("MOCK run: deterministic stand-ins, not real model/LLM numbers.")
+    elif not args.allow_live_llm:
+        # Safe-by-default non-mock run: real local embedder + reranker (no API spend),
+        # but NO Anthropic calls. Multi-query rewrites fall back to the deterministic mock so
+        # multi-query variants still run without spending; generation + judging are disabled.
+        embedder_factory = real_embedder_factory
+        rerank_score_fn = get_reranker_score_fn()
+        rewrite_fn = mock_rewrite_fn
+        generate_fn = None
+        judge_fn = None
+        print(
+            "NOTE: live LLM disabled (no --allow-live-llm). Retrieval-only run: real embedder + "
+            "reranker, deterministic multi-query rewrites, no generation/judging, no API spend."
+        )
+        print(
+            "      Re-run with --allow-live-llm to enable real Anthropic generation + judging."
+        )
+        notes.append(
+            "Retrieval-only run (no --allow-live-llm): generation/judging skipped, "
+            "multi-query rewrites are deterministic stand-ins."
+        )
     else:
+        generation_enabled = not args.no_generation
+        estimate = estimate_live_llm_calls(
+            specs, len(goldens), generation_enabled=generation_enabled
+        )
+        print_live_llm_estimate(estimate)
         embedder_factory = real_embedder_factory
         rerank_score_fn = get_reranker_score_fn()
         rewrite_fn = anthropic_rewrite_fn
         generate_fn = None if args.no_generation else anthropic_generate_fn
         judge_fn = None if args.no_generation else anthropic_judge_fn
+        notes.append(
+            f"LIVE LLM run: ~{estimate['total']} Anthropic calls "
+            f"(gen={estimate['generation']}, judge={estimate['judge']}, "
+            f"rewrite={estimate['rewrite']})."
+        )
 
     report, snapshots = run_eval(
         specs,
