@@ -30,6 +30,14 @@ class ModelServerResponseError(ModelServerError):
     """The model-server returned a 4xx or a response body the adapter could not parse."""
 
 
+class LLMError(Exception):
+    """Base class for LLM adapter errors."""
+
+
+class LLMUnavailableError(LLMError):
+    """The LLM provider was unreachable, timed out, rate-limited, or returned an error."""
+
+
 class TracingError(Exception):
     """Base class for tracing adapter errors."""
 

@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from app.routes.classify import router as classify_router
 from app.routes.embed import router as embed_router
 from app.routes.ner import router as ner_router
 from app.routes.rerank import router as rerank_router
@@ -19,6 +20,7 @@ def create_app() -> FastAPI:
     app.include_router(summarization_router)
     app.include_router(embed_router)
     app.include_router(rerank_router)
+    app.include_router(classify_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:

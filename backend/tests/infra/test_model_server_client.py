@@ -85,6 +85,33 @@ async def test_4xx_raises_response_error_without_retry() -> None:
 
 
 @pytest.mark.asyncio
+async def test_classify_parses_label_and_confidence() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/classify"
+        return httpx.Response(200, json={"label": "bug", "scores": {"bug": 0.7, "docs": 0.3}})
+
+    client = _client(httpx.MockTransport(handler))
+    label, confidence = await client.classify("scheduler crashes", "traceback")
+    assert label == "bug"
+    assert confidence == 0.7
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_extract_entities_maps_text_and_type() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"entities": [{"text": "Airflow", "type": "ORG", "start": 0, "end": 7}]},
+        )
+
+    client = _client(httpx.MockTransport(handler))
+    entities = await client.extract_entities("Airflow scheduler")
+    assert entities == [{"text": "Airflow", "type": "ORG"}]
+    await client.aclose()
+
+
+@pytest.mark.asyncio
 async def test_transport_error_retried_then_unavailable() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("refused")

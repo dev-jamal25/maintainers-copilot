@@ -12,11 +12,26 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.rag import Chunk, RetrievedChunk
+
+
+@dataclass(frozen=True)
+class StoredChunk:
+    """A persisted chunk's text + the metadata needed to build context and citations."""
+
+    chunk_id: str
+    parent_id: str | None
+    level: str
+    source_type: str
+    title: str | None
+    url: str | None
+    text: str
+
 
 _INSERT_SQL = text(
     """
@@ -43,6 +58,25 @@ _SEARCH_SQL = text(
     WHERE level = :level AND embedding IS NOT NULL
     ORDER BY embedding <=> CAST(:query AS vector)
     LIMIT :limit
+    """
+)
+
+# Same as _SEARCH_SQL plus a metadata filter on source_type (D-RAG metadata filtering).
+_SEARCH_SQL_SOURCE = text(
+    """
+    SELECT chunk_id, parent_id, (1 - (embedding <=> CAST(:query AS vector))) AS score
+    FROM rag_chunks
+    WHERE level = :level AND embedding IS NOT NULL AND source_type = :source_type
+    ORDER BY embedding <=> CAST(:query AS vector)
+    LIMIT :limit
+    """
+)
+
+_FETCH_BY_IDS_SQL = text(
+    """
+    SELECT chunk_id, parent_id, level, source_type, title, url, text
+    FROM rag_chunks
+    WHERE chunk_id = ANY(:ids)
     """
 )
 
@@ -89,11 +123,19 @@ class ChunkRepository:
         *,
         limit: int,
         level: str = "child",
+        source_type: str | None = None,
     ) -> list[RetrievedChunk]:
-        result = await self._session.execute(
-            _SEARCH_SQL,
-            {"query": encode_vector(query_embedding), "level": level, "limit": limit},
-        )
+        params: dict[str, object] = {
+            "query": encode_vector(query_embedding),
+            "level": level,
+            "limit": limit,
+        }
+        if source_type is None:
+            statement = _SEARCH_SQL
+        else:
+            statement = _SEARCH_SQL_SOURCE
+            params["source_type"] = source_type
+        result = await self._session.execute(statement, params)
         return [
             RetrievedChunk(
                 chunk_id=str(row["chunk_id"]),
@@ -103,3 +145,22 @@ class ChunkRepository:
             )
             for rank, row in enumerate(result.mappings().all())
         ]
+
+    async def fetch_by_ids(self, chunk_ids: Sequence[str]) -> dict[str, StoredChunk]:
+        """Return text + metadata for the given chunk ids (for context expansion + citations)."""
+        if not chunk_ids:
+            return {}
+        result = await self._session.execute(_FETCH_BY_IDS_SQL, {"ids": list(chunk_ids)})
+        stored: dict[str, StoredChunk] = {}
+        for row in result.mappings().all():
+            chunk_id = str(row["chunk_id"])
+            stored[chunk_id] = StoredChunk(
+                chunk_id=chunk_id,
+                parent_id=row["parent_id"],
+                level=str(row["level"]),
+                source_type=str(row["source_type"]),
+                title=row["title"],
+                url=row["url"],
+                text=str(row["text"]),
+            )
+        return stored

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo host — allowed origin</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 720px; color: #111; }
+      code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 4px; }
+      .note { color: #374151; }
+    </style>
+  </head>
+  <body>
+    <h1>Maintainer's Copilot — allowed-origin demo</h1>
+    <p class="note">
+      This page is the <strong>allowed</strong> origin. Its origin (e.g.
+      <code>http://localhost:8080</code>) must be in the widget's <code>allowed_origins</code>
+      (set by an admin in the Streamlit app). The widget config fetch then succeeds (CORS) and the
+      chat bubble loads in the bottom corner.
+    </p>
+    <p class="note">
+      Set the widget id below (the admin-created <code>w_…</code> id) and the API base, then reload.
+      Open the browser console to see the loader logs.
+    </p>
+
+    <!-- One script tag is all a host needs. Replace data-widget-id with a real widget id. -->
+    <script
+      src="http://localhost:8000/widget.js"
+      data-widget-id="REPLACE_WITH_WIDGET_ID"
+      data-api-base="http://localhost:8000"
+    ></script>
+  </body>
+</html>

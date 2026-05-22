@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo host — blocked origin</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 720px; color: #111; }
+      code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 4px; }
+      .note { color: #374151; }
+    </style>
+  </head>
+  <body>
+    <h1>Maintainer's Copilot — blocked-origin demo</h1>
+    <p class="note">
+      Serve this page from an origin that is <strong>not</strong> in the widget's
+      <code>allowed_origins</code> (for example open it via a different host/port). The loader's
+      <code>fetch</code> for the widget config is rejected by CORS (the API only returns
+      <code>Access-Control-Allow-Origin</code> for allowed origins), so the widget never renders and
+      the browser console shows a clear error — failing safe without breaking this page.
+    </p>
+    <p class="note">Open the console: you should see a CORS error and the loader's
+      <code>could not load widget (origin not allowed …)</code> message.</p>
+
+    <script
+      src="http://localhost:8000/widget.js"
+      data-widget-id="REPLACE_WITH_WIDGET_ID"
+      data-api-base="http://localhost:8000"
+    ></script>
+  </body>
+</html>

@@ -104,3 +104,21 @@ class ModelServerClient:
         if not isinstance(summary, str):
             raise ModelServerResponseError("model-server /summarize missing 'summary'")
         return summary
+
+    async def classify(self, title: str, issue_body: str = "") -> tuple[str, float | None]:
+        body = await self._post_json("/classify", {"title": title, "body": issue_body})
+        label = body.get("label")
+        if not isinstance(label, str):
+            raise ModelServerResponseError("model-server /classify missing 'label'")
+        scores = body.get("scores")
+        confidence: float | None = None
+        if isinstance(scores, dict) and label in scores:
+            confidence = float(scores[label])
+        return label, confidence
+
+    async def extract_entities(self, text: str, *, max_entities: int = 50) -> list[dict[str, str]]:
+        body = await self._post_json("/ner", {"text": text, "max_entities": max_entities})
+        entities = body.get("entities")
+        if not isinstance(entities, list):
+            raise ModelServerResponseError("model-server /ner missing 'entities'")
+        return [{"text": str(e["text"]), "type": str(e["type"])} for e in entities]
